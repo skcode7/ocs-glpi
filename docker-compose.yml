@@ -1,0 +1,70 @@
+version: '3'
+
+services:
+#OCS Server
+  ocs:
+    image: ocsinventory/ocsinventory-docker-image:2.9
+    container_name : ocs-server
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - "./ocs/perlcomdata:/etc/ocsinventory-server"
+      - "./ocs/ocsreportsdata:/usr/share/ocsinventory-reports/ocsreports/extensions"
+      - "./ocs/varlibdata:/var/lib/ocsinventory-reports"
+      - "./ocs/httpdconfdata:/etc/httpd/conf.d"
+    env_file:
+      - gestion.env
+    networks:
+      - local
+    depends_on:
+      - mariadb
+
+#DataBase Server
+  mariadb:
+    image : mariadb:10.7
+    container_name : mariadb
+    restart: always
+    ports :
+      - 3306:3306
+    volumes :
+      - ./sql/:/docker-entrypoint-initdb.d/
+      - ./sql/sqldata:/var/lib/mysql
+    env_file:
+      - gestion.env
+    networks:
+      - local
+
+#GLPI
+  glpi:
+    image: diouxx/glpi
+    container_name: glpi
+    hostname: glpi
+    ports:
+      - "8090:80"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./glpi/:/var/www/html/glpi
+    env_file:
+      - gestion.env
+    restart: always
+    networks:
+      - local
+    depends_on:
+      - mariadb
+
+#Adminer
+  adminer:
+    platform: linux/amd64
+    image: adminer
+    container_name: adminer
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks:
+      - local
+
+networks:
+  local
